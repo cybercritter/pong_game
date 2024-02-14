@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """Weber State University - CS 1400 (Adamic): Programming I -- Midterm Project
 Python implementation of the classic game Pong.
 
@@ -5,7 +7,8 @@ This is a template for the implementation of the game Pong. You should
 implement the game logic in this file.
 """
 # pylint: disable=no-member
-# import math # You may want to use math functions in your implementation. Remove if unused.
+# import math # You may want to use math functions in your implementation.
+# Remove if unused.
 import sys
 
 import pygame
@@ -24,18 +27,43 @@ USER2_DOWN = pygame.K_DOWN  # Down arrow key
 COLOR_WHITE = (255, 255, 255)
 COLOR_BLACK = (0, 0, 0)
 
-# pylint: disable=invalid-name
 # Define the game objects
-ball = None  # REPLACE None with your code.
-player1 = None  # REPLACE None with your code.
-player2 = None  # REPLACE None with your code.
+ball = {'x': (WINDOW_WIDTH/2) - (BALL_WIDTH/2),
+        'y': (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)}
+player1 = {'x': 50, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
+player2 = {'x': WINDOW_WIDTH - 50, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
 
 
 # Put any other global variables you may need here (optional).
 
 
 # Define any helper functions here (optional).
+def move_ball(ball_pos, velocity_x, velocity_y):
+    """move the ball
 
+    Args:
+        ball (dict):  the balls position on the screen
+        velocity_x (int): velocity
+        velocity_y (int): _description_
+
+    Returns:
+        tuple: _description_
+    """
+
+    #Bouncing Algorithm when the Ball hit the edge of the canvas
+    x=ball_pos['x'] + velocity_x
+    y=ball_pos['y'] + velocity_y
+
+    if x < 0 or x > WINDOW_WIDTH:
+        velocity_x = -velocity_x
+        x= x + velocity_x
+
+    if y < 0 or y < WINDOW_HEIGHT:
+        velocity_y = -velocity_y
+        y= y + velocity_y
+
+    print(f"x: {x}, {y}")
+    return (x, y)
 
 # pylint: enable=invalid-name
 # Required Functions.
@@ -68,10 +96,22 @@ def process_input():
 
     # Use the dictionary of user inputs, to update the player positions.
     # UPDATE THE CODE BELOW TO MOVE THE PLAYERS BASED ON USER INPUTS.
-    if user_inputs[USER1_UP]:  # HERE IS AN EXAMPLE ON HOW TO ACCESS THE USER INPUTS.
-        pass   # ! REPLACE WITH YOUR CODE TO MOVE PLAYER1 UP.
-    # ! ADD THE REST OF THE USER INPUTS TO MOVE THE PLAYERS.
+    # HERE IS AN EXAMPLE ON HOW TO ACCESS THE USER INPUTS.
+    if user_inputs[USER1_UP]:
+        if player1['y'] > 0:
+            player1['y'] -= 2
 
+    if user_inputs[USER1_DOWN]:
+        if player1['y'] < WINDOW_HEIGHT - PADDLE_HEIGHT:
+            player1['y'] += 2
+
+    if user_inputs[USER2_UP]:
+        if player2['y'] > 0:
+            player2['y'] -= 2
+
+    if user_inputs[USER2_DOWN]:
+        if player2['y'] < WINDOW_HEIGHT - PADDLE_HEIGHT:
+            player2['y'] += 2
 
 def update():
     """Update the positions of the game objects for the next frame.
@@ -87,9 +127,23 @@ def update():
             Stop the paddle movement if a collision is detected.
     """
     # ! IMPLEMENT THE FUNCTIONALITY DESCRIBED IN THE DOCSTRING ABOVE, THEN
-    # REMOVE TODO COMMENTS AND THE PLACEHOLDER DOCSTRING ABOVE.
-    return  # DELETE THIS LINE WHEN YOU IMPLEMENT THE FUNCTION.
 
+    velocity_x = 1
+    velocity_y = 1
+
+    ball['x'] += velocity_x
+    ball['y'] += velocity_y
+
+    if (ball['x'] < 0) or ball['x'] > (WINDOW_WIDTH - BALL_WIDTH):
+        ball['x'] += 1
+
+    if ball['x'] > (WINDOW_WIDTH - BALL_WIDTH):
+        ball['x'] -= 3
+
+    if (ball['y'] < 0) or (ball['y'] > (WINDOW_HEIGHT - BALL_HEIGHT)):
+        ball['y'] += 3
+    else:
+        ball['y'] -= .7
 
 def render():
     """Draw the game objects to the window based on their current position.
@@ -115,9 +169,10 @@ def render():
     if isinstance(player1, dict) and isinstance(player2, dict):
         _paddle1 = (player1['x'], player1['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
         _paddle2 = (player2['x'], player2['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
-    elif (isinstance(player1, (tuple, list)) and isinstance(player2, (tuple, list))):
-        _paddle1 = (player1[0], player1[1], PADDLE_WIDTH, PADDLE_HEIGHT)
-        _paddle2 = (player2[0], player2[1], PADDLE_WIDTH, PADDLE_HEIGHT)
+    elif (isinstance(player1, (tuple, list)) and
+          isinstance(player2, (tuple, list))):
+        _paddle1 = (player1[0], player1[1], PADDLE_WIDTH, PADDLE_HEIGHT)  # type: ignore
+        _paddle2 = (player2[0], player2[1], PADDLE_WIDTH, PADDLE_HEIGHT)  # type: ignore
     else:
         raise TypeError("player1 and player2 must be either both lists, "
                         "both tuples, or both dictionaries.")

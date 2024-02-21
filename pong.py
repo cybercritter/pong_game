@@ -30,49 +30,89 @@ COLOR_BLACK = (0, 0, 0)
 # Define the game objects
 ball = {'x': (WINDOW_WIDTH/2) - (BALL_WIDTH/2),
         'y': (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)}
-player1 = {'x': 50, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
-player2 = {'x': WINDOW_WIDTH - 50, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
+player1 = {'x': 50, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2), 'score': 0}
+player2 = {'x': WINDOW_WIDTH - 50,
+           'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2), 'score': 0}
 
 
+# pylint: disable=global-statement
 # Put any other global variables you may need here (optional).
+BOARD_CENTER = ((WINDOW_WIDTH/2) - (BALL_WIDTH/2),
+                (WINDOW_HEIGHT/2) - (BALL_WIDTH/2))
 
+BALL_VELOCITY_X = 2
+BALL_VELOCITY_Y = .7
+PADDLE_VELOCITY = 4
 
 # Define any helper functions here (optional).
-def move_ball(ball_pos, velocity_x, velocity_y):
-    """move the ball
 
-    Args:
-        ball (dict):  the balls position on the screen
-        velocity_x (int): velocity
-        velocity_y (int): _description_
-
-    Returns:
-        tuple: _description_
-    """
-
-    #Bouncing Algorithm when the Ball hit the edge of the canvas
-    x=ball_pos['x'] + velocity_x
-    y=ball_pos['y'] + velocity_y
-
-    if x < 0 or x > WINDOW_WIDTH:
-        velocity_x = -velocity_x
-        x= x + velocity_x
-
-    if y < 0 or y < WINDOW_HEIGHT:
-        velocity_y = -velocity_y
-        y= y + velocity_y
-
-    print(f"x: {x}, {y}")
-    return (x, y)
 
 # pylint: enable=invalid-name
 # Required Functions.
+
+def move_ball():
+    """
+    The move_ball function is responsible for moving the ball
+    around the screen.
+    It takes into account collisions with paddles and walls,
+    as well as changing the velocity of the ball when it
+    collides with a paddle or wall.
+
+    :return: A dictionary with the current ball coordinates
+    """
+    global BALL_VELOCITY_X, BALL_VELOCITY_Y
+
+    # Bouncing Algorithm when the Ball hit the edge of the canvas
+    x = ball['x'] + BALL_VELOCITY_X
+    y = ball['y'] + BALL_VELOCITY_Y
+    collision_wall = False
+
+    if x < 0:
+        player2['score'] += 1
+        BALL_VELOCITY_X = -BALL_VELOCITY_X
+        x = x + BALL_VELOCITY_X
+        collision_wall = True
+
+    elif x > WINDOW_WIDTH - BALL_WIDTH / 2:
+        player1['score'] += 1
+        BALL_VELOCITY_X = -BALL_VELOCITY_X
+        x = x + BALL_VELOCITY_X
+        collision_wall = True
+
+    elif (x + BALL_WIDTH >= player2['x'] and
+          y <= (player2['y'] + PADDLE_HEIGHT) >= player2['y']):
+        x += 1
+        y += 1
+        BALL_VELOCITY_X = -BALL_VELOCITY_X
+
+    elif (x <= (player1['x'] + PADDLE_WIDTH) and
+          y <= (player1['y'] + PADDLE_HEIGHT) >= player1['y']):
+        x += 1
+        y += 1
+        BALL_VELOCITY_X = -BALL_VELOCITY_X
+
+    if y + BALL_HEIGHT > WINDOW_HEIGHT:
+        x -= 1
+        y -= 1
+        BALL_VELOCITY_Y = -BALL_VELOCITY_Y
+
+    elif y < 0:
+        x += 1
+        y += 1
+        BALL_VELOCITY_Y = -BALL_VELOCITY_Y
+
+    if collision_wall is True:
+        ball['x'], ball['y'] = BOARD_CENTER
+    # set the current ball coordinates
+    else:
+        ball['x'] = x
+        ball['y'] = y
+
+
 def get_scores():
     """Return the current scores of player1 and player2 as a tuple.
-
-    ! CHANGE THIS FUNCTION TO RETURN SCORES FROM YOUR IMPLEMENTATION.
-    THEN UPDATE THIS DOCSTRING TO REFLECT YOUR IMPLEMENTATION."""
-    return (0, 0)
+    """
+    return (player1['score'], player2['score'])
 
 
 def process_input():
@@ -99,19 +139,20 @@ def process_input():
     # HERE IS AN EXAMPLE ON HOW TO ACCESS THE USER INPUTS.
     if user_inputs[USER1_UP]:
         if player1['y'] > 0:
-            player1['y'] -= 2
+            player1['y'] -= PADDLE_VELOCITY
 
     if user_inputs[USER1_DOWN]:
         if player1['y'] < WINDOW_HEIGHT - PADDLE_HEIGHT:
-            player1['y'] += 2
+            player1['y'] += PADDLE_VELOCITY
 
     if user_inputs[USER2_UP]:
         if player2['y'] > 0:
-            player2['y'] -= 2
+            player2['y'] -= PADDLE_VELOCITY
 
     if user_inputs[USER2_DOWN]:
         if player2['y'] < WINDOW_HEIGHT - PADDLE_HEIGHT:
-            player2['y'] += 2
+            player2['y'] += PADDLE_VELOCITY
+
 
 def update():
     """Update the positions of the game objects for the next frame.
@@ -126,24 +167,8 @@ def update():
         - Paddle Collisions: Check if the paddles collide with the top/bottom.
             Stop the paddle movement if a collision is detected.
     """
-    # ! IMPLEMENT THE FUNCTIONALITY DESCRIBED IN THE DOCSTRING ABOVE, THEN
+    move_ball()
 
-    velocity_x = 1
-    velocity_y = 1
-
-    ball['x'] += velocity_x
-    ball['y'] += velocity_y
-
-    if (ball['x'] < 0) or ball['x'] > (WINDOW_WIDTH - BALL_WIDTH):
-        ball['x'] += 1
-
-    if ball['x'] > (WINDOW_WIDTH - BALL_WIDTH):
-        ball['x'] -= 3
-
-    if (ball['y'] < 0) or (ball['y'] > (WINDOW_HEIGHT - BALL_HEIGHT)):
-        ball['y'] += 3
-    else:
-        ball['y'] -= .7
 
 def render():
     """Draw the game objects to the window based on their current position.
@@ -169,10 +194,12 @@ def render():
     if isinstance(player1, dict) and isinstance(player2, dict):
         _paddle1 = (player1['x'], player1['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
         _paddle2 = (player2['x'], player2['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
-    elif (isinstance(player1, (tuple, list)) and
-          isinstance(player2, (tuple, list))):
-        _paddle1 = (player1[0], player1[1], PADDLE_WIDTH, PADDLE_HEIGHT)  # type: ignore
-        _paddle2 = (player2[0], player2[1], PADDLE_WIDTH, PADDLE_HEIGHT)  # type: ignore
+    # elif (isinstance(player1, (tuple, list)) and
+    #       isinstance(player2, (tuple, list))):
+    #     _paddle1 = (player1[0], player1[1], PADDLE_WIDTH,
+    #                 PADDLE_HEIGHT)  # type: ignore
+    #     _paddle2 = (player2[0], player2[1], PADDLE_WIDTH,
+    #                 PADDLE_HEIGHT)  # type: ignore
     else:
         raise TypeError("player1 and player2 must be either both lists, "
                         "both tuples, or both dictionaries.")

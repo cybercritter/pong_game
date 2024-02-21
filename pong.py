@@ -50,7 +50,6 @@ PADDLE_VELOCITY = 4
 # pylint: enable=invalid-name
 # Required Functions.
 
-
 def move_ball():
     """
     The move_ball function is responsible for moving the ball
@@ -81,15 +80,13 @@ def move_ball():
         collision_wall = True
 
     elif (x + BALL_WIDTH >= player2['x'] and
-          y <= (player2['y'] + PADDLE_HEIGHT) and
-            y >= player2['y']):
+          y <= (player2['y'] + PADDLE_HEIGHT) >= player2['y']):
         x += 1
         y += 1
         BALL_VELOCITY_X = -BALL_VELOCITY_X
 
     elif (x <= (player1['x'] + PADDLE_WIDTH) and
-          y <= (player1['y'] + PADDLE_HEIGHT) and
-          y >= player1['y']):
+          y <= (player1['y'] + PADDLE_HEIGHT) >= player1['y']):
         x += 1
         y += 1
         BALL_VELOCITY_X = -BALL_VELOCITY_X

@@ -30,18 +30,21 @@ COLOR_BLACK = (0, 0, 0)
 # Define the game objects
 ball = {'x': (WINDOW_WIDTH/2) - (BALL_WIDTH/2),
         'y': (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)}
-player1 = {'x': 50, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2), 'score': 0}
-player2 = {'x': WINDOW_WIDTH - 50,
-           'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2), 'score': 0}
+player1 = {'x': 10, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
+player2 = {'x': WINDOW_WIDTH - BALL_WIDTH - 10,
+           'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
 
+PLAYER_SCORES = {"player1": 0, "player2": 0}
 
 # pylint: disable=global-statement
 # Put any other global variables you may need here (optional).
 BOARD_CENTER = ((WINDOW_WIDTH/2) - (BALL_WIDTH/2),
                 (WINDOW_HEIGHT/2) - (BALL_WIDTH/2))
 
-BALL_VELOCITY_X = 2
-BALL_VELOCITY_Y = .7
+BALL_VELOCITIES_X = [2, 3, 4]
+BALL_VELOCITIES_Y = [.7, .9, 1.2]
+BALL_VELOCITY_X = 3
+BALL_VELOCITY_Y = 1.9
 PADDLE_VELOCITY = 4
 
 # Define any helper functions here (optional).
@@ -50,15 +53,45 @@ PADDLE_VELOCITY = 4
 # pylint: enable=invalid-name
 # Required Functions.
 
+def paddle_hit(x, y):
+    """
+    The paddle_hit function is used to check if the ball collides with
+    either paddle.
+
+    If it does, then the x velocity of the ball will be reversed
+    and returned.
+
+    :param x: Check if the ball collides with the paddle
+    :param y: Check if the ball is within the height of the paddle
+
+    :return: The x and y coordinates of the ball
+    """
+    global BALL_VELOCITY_X
+    # This section of the code is checking if the ball collides
+    if x > player2['x'] - PADDLE_WIDTH:
+        if y > player2['y'] and y <= (player2['y'] + PADDLE_HEIGHT):
+            BALL_VELOCITY_X = -BALL_VELOCITY_X
+            x = x + BALL_VELOCITY_X
+            print(f'player 2 - ({x:.2f},{y:.2f})')
+
+    if x <= player1['x'] + PADDLE_WIDTH:
+        if y >= player1['y'] and y <= (player1['y'] + PADDLE_HEIGHT):
+            BALL_VELOCITY_X = -BALL_VELOCITY_X
+            x = x + BALL_VELOCITY_X
+            print(f'player 1 - ({x:.2f},{y:.2f})')
+
+    return (x, y)
+
+
 def move_ball():
     """
-    The move_ball function is responsible for moving the ball
-    around the screen.
-    It takes into account collisions with paddles and walls,
-    as well as changing the velocity of the ball when it
-    collides with a paddle or wall.
+    The move_ball function is responsible for moving the ball around
+    the screen.
 
-    :return: A dictionary with the current ball coordinates
+    It takes into account collisions with paddles and walls,
+    as well as scoring points.
+
+    :return: The ball coordinates
     """
     global BALL_VELOCITY_X, BALL_VELOCITY_Y
 
@@ -68,28 +101,16 @@ def move_ball():
     collision_wall = False
 
     if x < 0:
-        player2['score'] += 1
+        PLAYER_SCORES['player2'] += 1
         BALL_VELOCITY_X = -BALL_VELOCITY_X
         x = x + BALL_VELOCITY_X
         collision_wall = True
 
     elif x > WINDOW_WIDTH - BALL_WIDTH / 2:
-        player1['score'] += 1
+        PLAYER_SCORES['player1'] += 1
         BALL_VELOCITY_X = -BALL_VELOCITY_X
         x = x + BALL_VELOCITY_X
         collision_wall = True
-
-    elif (x + BALL_WIDTH >= player2['x'] and
-          y <= (player2['y'] + PADDLE_HEIGHT) >= player2['y']):
-        x += 1
-        y += 1
-        BALL_VELOCITY_X = -BALL_VELOCITY_X
-
-    elif (x <= (player1['x'] + PADDLE_WIDTH) and
-          y <= (player1['y'] + PADDLE_HEIGHT) >= player1['y']):
-        x += 1
-        y += 1
-        BALL_VELOCITY_X = -BALL_VELOCITY_X
 
     if y + BALL_HEIGHT > WINDOW_HEIGHT:
         x -= 1
@@ -101,18 +122,20 @@ def move_ball():
         y += 1
         BALL_VELOCITY_Y = -BALL_VELOCITY_Y
 
+    x, y = paddle_hit(x, y)
+
     if collision_wall is True:
-        ball['x'], ball['y'] = BOARD_CENTER
+        x, y = BOARD_CENTER
+
     # set the current ball coordinates
-    else:
-        ball['x'] = x
-        ball['y'] = y
+    ball['x'] = x
+    ball['y'] = y
 
 
 def get_scores():
     """Return the current scores of player1 and player2 as a tuple.
     """
-    return (player1['score'], player2['score'])
+    return (PLAYER_SCORES['player1'], PLAYER_SCORES['player2'])
 
 
 def process_input():

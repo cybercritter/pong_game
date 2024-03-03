@@ -1,8 +1,11 @@
 """Weber State University - CS 1400 (Adamic): Programming I -- Midterm Project
+
 Python implementation of the classic game Pong.
 
-This is a template for the implementation of the game Pong. You should
-implement the game logic in this file.
+This implementation:
+@author: J. Adamic (template) and Michael Reid (function)
+@weber W#: 01251998
+@date: 3/2/2024
 """
 # pylint: disable=no-member disable=invalid-sequence-index
 import sys
@@ -28,170 +31,127 @@ ball = [0, 0]
 player1 = [0, 0]
 player2 = [0, 0]
 
-# Define any helper functions here (optional).
-"""
-This module contains additional helper functions for the pong program.
-"""
-
-def wall_hit(ball_pos, scores, ball_velo, window_width, ball_width):
-    """
-    The wall_hit function checks to see if the ball has hit either wall.
-    If it has, then the function returns True and updates the score of whichever player scored.
-    Otherwise, it returns False.
-
-    :param ball: Get the x and y coordinates of the ball
-    :param scores: Keep track of the score for each player
-    :param ball_velo: Change the velocity of the ball
-    :param window_width: Determine the width of the window
-    :param ball_width: Determine the width of the ball
-    :return: collision found
-    """
-    x = int(ball_pos[0])
-    velocity_x = ball_velo[0]
-    wall_collision = False
-    right_wall_collision = window_width - (ball_width / 2)
-
-    if ball_pos[0] < 0:
-        wall_collision = True
-        velocity_x = -velocity_x
-        x = x + velocity_x
-        scores['player2'] += 1
-
-    elif x > right_wall_collision:
-        wall_collision = True
-        velocity_x = -velocity_x
-        x = x + velocity_x
-        scores['player1'] += 1
-
-    return wall_collision
-
-
-def init_positions(window_height, window_width, ball_width, paddle_height):
-    """
-    The init function initializes the game by setting up the left and right paddles, as well as
-    the ball.
-
-    :param window_height: Set the height of the window,
-    :param window_width: Set the width of the window
-    :param ball_width: Determine the width of the ball
-    :param paddle_height: Set the height of the paddle
-    :param half_paddle_width: Determine the position of the paddle
-    :return:
-    - left paddle position (x and y),
-    - right paddle position (x and y)
-    - ball position (x and y).
-
-    """
-
-    left_paddle = [ball_width + 1,
-                   window_height / 2 - paddle_height / 2]
-
-    right_paddle = [window_width - (ball_width - 1),
-                    (window_height / 2) - (paddle_height / 2)]
-
-    ball_pos = [(window_width/2) - (ball_width/2) + 1,
-                (window_height/2) - (ball_width/2)]
-
-    return (left_paddle, right_paddle, ball_pos)
-
-
-def paddle_hit(ball_pos,
-               ball_width,
-               ball_height,
-               ball_velo,
-               player1_pos,
-               player2_pos,
-               paddle_height,
-               paddle_width):
-    """
-    The paddle_hit function is used to check if the ball has collided with either of the paddles.
-    If it has, then it will reverse the direction of travel for that axis and move
-    in that direction.
-
-
-    :param ball: Determine the position of the ball
-    :param ball_velo: Change the velocity of the ball
-    :param player1: Check if the ball collides with the paddle
-    :param player2: Check if the ball collides with player2's paddle
-    :param paddle_height: Determine the height of the paddle
-    :param paddle_width: Define the width of the paddle
-    :param ball_width: Determine if the ball is within a certain range of the paddle
-    :return: The new ball position and velocity
-    """
-
-    velocity_x = ball_velo[0]
-    velocity_y = ball_velo[1]
-    x = ball_pos[0]
-    y = ball_pos[1]
-    paddle1_x = player1_pos[0]
-    paddle1_y = player1_pos[1]
-
-    paddle2_x = player2_pos[0]
-    paddle2_y = player2_pos[1]
-
-    ball_rect = pygame.Rect((x, y), (ball_width, ball_height))
-    paddle1_rect = pygame.Rect((paddle1_x, paddle1_y), (paddle_width, paddle_height))
-    paddle2_rect = pygame.Rect((paddle2_x, paddle2_y), (paddle_width, paddle_height))
-
-    # player 1 is paddle_left
-    if pygame.Rect.colliderect(ball_rect, paddle1_rect):
-        velocity_x = -velocity_x
-        x += velocity_x
-
-    # player2 is paddle_right
-    if pygame.Rect.colliderect(ball_rect, paddle2_rect):
-        velocity_x = -velocity_x
-        x += velocity_x
-
-    return ([int(x), int(y)], [velocity_x, velocity_y])
-
-
-def update_ball_position(ball_pos, ball_velo, window_height, ball_height):
-    # Bouncing Algorithm when the Ball hit the edge of the canvas
-    """
-    The update_ball_position function takes in the ball's current position, its width and height,
-    its velocity (velocity_x and velocity_y), the window's width and height, as well as the ball's
-    height. It then updates the ball position based on its current x-coordinate (x) and y-coordinate
-    (y). If it hits a wall or ceiling of canvas, it will bounce off by reversing its direction. The
-    ball is also updated to move at a constant speed.
-
-    :param ball_pos: Store the current position of the ball
-    :param ball_width: Set the width of the ball
-    :param ball_velo: Set the velocity of the ball
-    :param window_width: Set the width of the window
-    :param window_height: Determine the height of the window
-    :param ball_height: Determine the height of the ball
-    :return: A list of two elements, the first element is a list of x and y coordinates
-    """
-    velocity_x = ball_velo[0]
-    velocity_y = ball_velo[1]
-    x = ball_pos[0] + velocity_x
-    y = ball_pos[1] + velocity_y
-
-    if y + ball_height > window_height:
-        x -= 1
-        y -= 1
-        velocity_y = -velocity_y
-
-    elif y < 0:
-        x += 1
-        y += 1
-        velocity_y = -velocity_y
-
-    # set the current ball coordinates
-    return ([int(x), int(y)], [velocity_x, velocity_y])
-
-
 # pylint: disable=global-statement
 # Put any other global variables you may need here (optional).
 PADDLE_VELOCITY = 5
 HALF_PAD_HEIGHT = 50
 HALF_PAD_WIDTH = 10
-ball_velocity = [2, 2]
-player_scores = {"player1": 0, "player2": 0}
 
 # Flag to keep initialization state
 game_initialized = False
+velocity = {'x': 2, 'y': 2}
+player_scores = {"player1": 0, "player2": 0}
+
+
+# Define any helper functions here (optional).
+def wall_hit():
+    """
+    The wall_hit function checks to see if the ball has hit a wall.
+    If it has, then it will reverse the direction of the ball and return True.
+    Otherwise, it returns False.
+
+    :return: A boolean value
+    """
+    x = int(ball[0])
+    wall_collision = False
+    right_wall_collision = WINDOW_WIDTH - (BALL_WIDTH / 2)
+
+    if x < 0:
+        wall_collision = True
+        velocity['x'] = -velocity['x']
+        x = x + velocity['x']
+        player_scores['player2'] += 1
+
+    elif x > right_wall_collision:
+        wall_collision = True
+        velocity['x'] = -velocity['x']
+        x = x + velocity['x']
+        player_scores['player1'] += 1
+
+    return wall_collision
+
+
+def init_positions():
+
+    """
+    The init_positions function initializes the positions of the player paddles and ball.
+    It takes no arguments, but uses global variables to set the position of each object.
+    The function returns nothing.
+
+    :return: A list of lists
+    """
+    global player1, player2, ball
+
+    player1 = [BALL_WIDTH + 1, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
+
+    player2 = [WINDOW_WIDTH - (BALL_WIDTH - 1),
+                    (WINDOW_HEIGHT / 2) - (PADDLE_HEIGHT / 2)]
+
+    ball = [(WINDOW_WIDTH/2) - (BALL_WIDTH/2) + 1,
+                (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)]
+
+
+
+def paddle_hit():
+    """
+    The paddle_hit function checks to see if the ball has collided with either paddle.
+    If it has, then the velocity of the ball is reversed and
+    its x coordinate is updated accordingly.
+
+    :return: The ball coordinates
+    """
+    x = ball[0]
+    y = ball[1]
+    paddle1_x = player1[0]
+    paddle1_y = player1[1]
+
+    paddle2_x = player2[0]
+    paddle2_y = player2[1]
+
+    ball_rect = pygame.Rect((x, y), (BALL_WIDTH, BALL_HEIGHT))
+    paddle1_rect = pygame.Rect((paddle1_x, paddle1_y), (BALL_WIDTH, PADDLE_HEIGHT))
+    paddle2_rect = pygame.Rect((paddle2_x, paddle2_y), (BALL_WIDTH, PADDLE_HEIGHT))
+
+    # player 1 is paddle_left
+    if pygame.Rect.colliderect(ball_rect, paddle1_rect):
+        velocity['x'] = -velocity['x']
+        x += velocity['x']
+
+    # player2 is paddle_right
+    if pygame.Rect.colliderect(ball_rect, paddle2_rect):
+        velocity['x'] = -velocity['x']
+        x += velocity['x']
+
+    # set the current ball coordinates
+    ball[0] = x
+    ball[1] = y
+
+
+
+def update_ball_position():
+    # store values in more
+    """
+    The update_ball_position function updates the ball's position by adding the velocity to it.
+    If the ball hits a wall, its y-velocity is reversed.
+
+    :return: The ball coordinates
+    """
+    x = ball[0] + velocity['x']
+    y = ball[1] + velocity['y']
+
+    if y + BALL_HEIGHT > WINDOW_HEIGHT:
+        x -= 1
+        y -= 1
+        velocity['y'] = -velocity['y']
+
+    elif y < 0:
+        x += 1
+        y += 1
+        velocity['y'] = -velocity['y']
+
+    # set the current ball coordinates
+    ball[0] = x
+    ball[1] = y
 
 # pylint: enable=invalid-name
 # Required Functions.
@@ -209,9 +169,9 @@ def get_scores():
 def process_input():
     """
     The process_input function is used to update the game objects and state.
-    If the user presses ESC, quit the game.
-    If the user presses W or S, update the player1 position.
-    If the user presses the UP or DOWN arrow keys, update the player2 position.
+    - If the user presses ESC, quit the game.
+    - If the user presses W or S, update the player1 position.
+    - If the user presses the UP or DOWN arrow keys, update the player2 position.
     """
     # Check for user input to close the game window. DO NOT MODIFY THIS LOOP.
     for event in pygame.event.get():
@@ -241,41 +201,23 @@ def process_input():
 def update():
     """
     The update function is responsible for updating the game state.
-    It takes no arguments and returns nothing. It updates the ball and paddle positions
 
-    It also checks if there are any collisions between paddles or walls.
+    - It updates the ball and paddle positions
+    - It also checks if there are any collisions between paddles or walls.
 
-    :return: A tuple of the ball and the velocity
     """
-    global player1, player2, ball, game_initialized, ball_velocity
+    global game_initialized
 
     if game_initialized is False:
-        player1, player2, ball = init_positions(WINDOW_HEIGHT,
-                                    WINDOW_WIDTH,
-                                    BALL_WIDTH,
-                                    PADDLE_HEIGHT)
+        init_positions()
         game_initialized = True
 
-    ball, ball_velocity = update_ball_position(ball,
-                                                                ball_velocity,
-                                                                WINDOW_HEIGHT,
-                                                                BALL_HEIGHT)
+    update_ball_position()
 
-    if wall_hit(ball, player_scores, ball_velocity, WINDOW_WIDTH, BALL_WIDTH):
-        player1, player2, ball = init_positions(WINDOW_HEIGHT,
-                                                        WINDOW_WIDTH,
-                                                        BALL_WIDTH,
-                                                        PADDLE_HEIGHT)
+    if wall_hit():
+        init_positions()
 
-    ball, ball_velocity =  paddle_hit(ball,
-                                                        BALL_WIDTH,
-                                                        BALL_HEIGHT,
-                                                        ball_velocity,
-                                                        player1,
-                                                        player2,
-                                                        PADDLE_HEIGHT,
-                                                        PADDLE_WIDTH
-                                                        )
+    paddle_hit()
 
 
 

@@ -33,12 +33,10 @@ player2 = [0, 0]
 
 # pylint: disable=global-statement
 # Put any other global variables you may need here (optional).
-PADDLE_VELOCITY = 5
-HALF_PAD_HEIGHT = 50
-HALF_PAD_WIDTH = 10
 
 # Flag to keep initialization state
 game_initialized = False
+PADDLE_VELOCITY = 5
 velocity = {'x': 2, 'y': 2}
 player_scores = {"player1": 0, "player2": 0}
 
@@ -47,59 +45,72 @@ player_scores = {"player1": 0, "player2": 0}
 def wall_hit():
     """
     The wall_hit function checks to see if the ball has hit a wall.
-    If it has, then it will reverse the direction of the ball and return True.
+    If it has, then it returns True and adds one point to the appropriate player's score.
     Otherwise, it returns False.
 
-    :return: A boolean value
+    :return: True if wall hit, False if not collision occurred
     """
     x = int(ball[0])
     wall_collision = False
+
+    # add the this to make the conditional easier to read
     right_wall_collision = WINDOW_WIDTH - (BALL_WIDTH / 2)
 
     if x < 0:
         wall_collision = True
-        velocity['x'] = -velocity['x']
-        x = x + velocity['x']
         player_scores['player2'] += 1
 
     elif x > right_wall_collision:
         wall_collision = True
-        velocity['x'] = -velocity['x']
-        x = x + velocity['x']
         player_scores['player1'] += 1
 
     return wall_collision
 
 
 def init_positions():
-
     """
-    The init_positions function initializes the positions of the player paddles and ball.
-    It takes no arguments, but uses global variables to set the position of each object.
-    The function returns nothing.
-
-    :return: A list of lists
+    Initializes the default positions of the player paddles and ball.
     """
     global player1, player2, ball
 
-    player1 = [BALL_WIDTH + 1, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
+    # player1's paddle is on the left side of the board and centered vertically
+    player1 = [0, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
 
-    player2 = [WINDOW_WIDTH - (BALL_WIDTH - 1),
-                    (WINDOW_HEIGHT / 2) - (PADDLE_HEIGHT / 2)]
+    # player2's paddle is on the right side of the board brought in 50px so tha it is not off the
+    # screen and centered vertically
+    player2 = [WINDOW_WIDTH - 50, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
 
-    ball = [(WINDOW_WIDTH/2) - (BALL_WIDTH/2) + 1,
-                (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)]
+    # center the ball in the middle of the board
+    ball = [(WINDOW_WIDTH/2) - (BALL_WIDTH/2), (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)]
 
+
+def change_y_velocity(y):
+    """
+    The function changes the velocity of the ball by flipping the y velocity,
+    which reverses its direction.
+
+    It then adds this new velocity to the current position of the ball to get a new position.
+
+    :param y: current ball-y coordinate
+    :return: new ball-y position
+    """
+    velocity['y'] = -velocity['y']
+    y += velocity['y']
+    return y
 
 
 def paddle_hit():
     """
-    The paddle_hit function checks to see if the ball has collided with either paddle.
-    If it has, then the velocity of the ball is reversed and
-    its x coordinate is updated accordingly.
+    The paddle_hit function is used to determine if the ball has collided with either paddle.
+    If it has, then the velocity of the ball will change in both x and y directions.
 
-    :return: The ball coordinates
+    The function also checks for a collision on each side of the paddle,
+    so that when a player hits the top or bottom of their paddle,
+    they can still hit it back towards their opponent.
+
+    Lastly it updates the balls coordinates
     """
+    # several variable created for both ease of use and to make the logic below more readable
     x = ball[0]
     y = ball[1]
     paddle1_x = player1[0]
@@ -108,21 +119,55 @@ def paddle_hit():
     paddle2_x = player2[0]
     paddle2_y = player2[1]
 
+    # Create a few pygame rectangles. Using built in pygame function
+    # makes finding collisions easier.
     ball_rect = pygame.Rect((x, y), (BALL_WIDTH, BALL_HEIGHT))
     paddle1_rect = pygame.Rect((paddle1_x, paddle1_y), (BALL_WIDTH, PADDLE_HEIGHT))
     paddle2_rect = pygame.Rect((paddle2_x, paddle2_y), (BALL_WIDTH, PADDLE_HEIGHT))
 
-    # player 1 is paddle_left
-    if pygame.Rect.colliderect(ball_rect, paddle1_rect):
-        velocity['x'] = -velocity['x']
-        x += velocity['x']
+    # Check to see if the ball has collided with player1's paddle also make sure the ball is
+    # moving to the right since player2's paddle is on the right side of the board.
+    if pygame.Rect.colliderect(ball_rect, paddle1_rect) and velocity['x'] < 0:
+        # this checks to see if the players paddle has been hit on the right side.
+        # 10 is to give some leeway
+        if abs(ball_rect.left - paddle1_rect.right) < 10:
+            velocity['x'] = -velocity['x']
+            x += velocity['x']
 
-    # player2 is paddle_right
-    if pygame.Rect.colliderect(ball_rect, paddle2_rect):
-        velocity['x'] = -velocity['x']
-        x += velocity['x']
+        # this checks to see if the players paddle has been hit on the top of the paddle.
+        # We also need to make sure the ball is heading down toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.bottom - paddle1_rect.top) < 10 and  velocity['y'] > 0:
+            y = change_y_velocity(velocity['y'])
 
-    # set the current ball coordinates
+        # this checks to see if the players paddle has been hit on from the bottom of the paddle.
+        # We also need to make sure the ball is heading up toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.top - paddle1_rect.bottom) < 10 and  velocity['y'] < 0:
+            y = change_y_velocity(velocity['y'])
+
+    # Check to see if the ball has collided with player2's paddle also make sure the ball is
+    # moving to the left since player1's paddle is on the left side of the board.
+    if pygame.Rect.colliderect(ball_rect, paddle2_rect) and velocity['x'] > 0:
+        # this checks to see if the players paddle has been hit on the left side.
+        # 10 is to give some leeway
+        if abs(ball_rect.right - paddle2_rect.left) < 10:
+            velocity['x'] = -velocity['x']
+            x += velocity['x']
+
+        # this checks to see if the players paddle has been hit on from the top of the paddle.
+        # We also need to make sure the ball is heading down toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.bottom - paddle2_rect.top) < 10 and  velocity['y'] > 0:
+            y = change_y_velocity(velocity['y'])
+
+        # this checks to see if the players paddle has been hit on from the bottom of the paddle.
+        # We also need to make sure the ball is heading up toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.top - paddle2_rect.bottom) < 10 and  velocity['y'] < 0:
+            y = change_y_velocity(velocity['y'])
+
+    # update the current ball coordinates
     ball[0] = x
     ball[1] = y
 
@@ -132,18 +177,22 @@ def update_ball_position():
     # store values in more
     """
     The update_ball_position function updates the ball's position by adding the velocity to it.
-    If the ball hits a wall, its y-velocity is reversed.
-
-    :return: The ball coordinates
+    If the ball hits a the top or bottom of the display, its y-velocity is reversed.
     """
+
+    # get the x,y corrdinates for the ball. adding velocity at this point smooths out the movement
     x = ball[0] + velocity['x']
     y = ball[1] + velocity['y']
 
+    # if the y point with height of the ball hits the bottom of the display
+    # "bounce" it back into play
     if y + BALL_HEIGHT > WINDOW_HEIGHT:
         x -= 1
         y -= 1
         velocity['y'] = -velocity['y']
 
+    # if the y point with height of the ball hits the top of the display
+    # "bounce" it back into play
     elif y < 0:
         x += 1
         y += 1
@@ -185,14 +234,18 @@ def process_input():
     # Get a dictionary of all user inputs.
     user_inputs = pygame.key.get_pressed()
 
+    # send the paddle up but don't let it go off the screen
     if user_inputs[USER1_UP] and player1[1] > 0:
         player1[1] -= PADDLE_VELOCITY
 
+    # send the paddle down but don't let it go off the screen
     if user_inputs[USER1_DOWN] and player1[1] < WINDOW_HEIGHT - PADDLE_HEIGHT:
         player1[1] += PADDLE_VELOCITY
 
+    # send the paddle up but don't let it go off the screen
     if user_inputs[USER2_UP] and player2[1] > 0:
         player2[1] -= PADDLE_VELOCITY
+    # send the paddle down but don't let it go off the screen
 
     if user_inputs[USER2_DOWN] and player2[1] < WINDOW_HEIGHT - PADDLE_HEIGHT:
         player2[1] += PADDLE_VELOCITY
@@ -208,15 +261,20 @@ def update():
     """
     global game_initialized
 
+    # if this is the start of the app. Initialize the ball and paddles to the start position
+    # and set the flag so the program doesn't run the init code again
     if game_initialized is False:
         init_positions()
         game_initialized = True
 
+    # move the ball to the next pixel on the screen
     update_ball_position()
 
+    # check to see if a wall is hit and adjust the score as needed
     if wall_hit():
         init_positions()
 
+    # check to see if a paddle has been hit and "bounce" it back into play if it has
     paddle_hit()
 
 
@@ -247,7 +305,7 @@ def render():
     # Get the current paddle positions and dimensions.
     if isinstance(player1, dict) and isinstance(player2, dict):
         _paddle1 = (player1['x'], player1['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
-        _paddle2 = (player2['x'], player2['y'], PADDLE_WIDTH, PADDLE_HEIGHT) # type: ignore
+        _paddle2 = (player2['x'], player2['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
     elif (isinstance(player1, (tuple, list)) and isinstance(player2, (tuple, list))):
         _paddle1 = (player1[0], player1[1], PADDLE_WIDTH, PADDLE_HEIGHT)
         _paddle2 = (player2[0], player2[1], PADDLE_WIDTH, PADDLE_HEIGHT)

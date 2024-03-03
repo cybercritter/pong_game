@@ -107,20 +107,20 @@ def paddle_hit():
     Update the ball coordinates
 
     """
-    x = ball[0]
-    y = ball[1]
+    x = int(ball[0])
+    y = int(ball[1])
 
     # This section of the code is checking if the ball collides
     if x > player2[0] - PADDLE_WIDTH:
-        if y > player2[1] and y <= (player2[1] + PADDLE_HEIGHT):
+        if player2[1] < y <= (player2[1] + PADDLE_HEIGHT):
             velocity['x'] = -velocity['x']
             x = x + velocity['x']
             print(f'player 2 - ({x:.2f},{y:.2f})')
 
-    if x <= player1[0] + PADDLE_WIDTH:
-        if y >= player1[1] and y <= (player1[1] + PADDLE_HEIGHT):
-            velocity['y'] = -velocity['y']
-            y = y + velocity['y']
+    if x < player1[0] + PADDLE_WIDTH:
+        if player1[1]<  y < (player1[1] + PADDLE_HEIGHT):
+            velocity['x'] = -velocity['x']
+            x = x + velocity['x']
             print(f'player 1 - ({x:.2f},{y:.2f})')
 
     ball[0] = x

@@ -101,76 +101,30 @@ def change_y_velocity(y):
 
 def paddle_hit():
     """
-    The paddle_hit function is used to determine if the ball has collided with either paddle.
-    If it has, then the velocity of the ball will change in both x and y directions.
+    The paddle_hit function is checking if the ball collides with either paddle.
+    If it does, then the velocity of the ball changes direction.
 
-    The function also checks for a collision on each side of the paddle,
-    so that when a player hits the top or bottom of their paddle,
-    they can still hit it back towards their opponent.
+    Update the ball coordinates
 
-    Lastly it updates the balls coordinates
     """
-    # several variable created for both ease of use and to make the logic below more readable
     x = ball[0]
     y = ball[1]
-    paddle1_x = player1[0]
-    paddle1_y = player1[1]
 
-    paddle2_x = player2[0]
-    paddle2_y = player2[1]
-
-    # Create a few pygame rectangles. Using built in pygame function
-    # makes finding collisions easier.
-    ball_rect = pygame.Rect((x, y), (BALL_WIDTH, BALL_HEIGHT))
-    paddle1_rect = pygame.Rect((paddle1_x, paddle1_y), (BALL_WIDTH, PADDLE_HEIGHT))
-    paddle2_rect = pygame.Rect((paddle2_x, paddle2_y), (BALL_WIDTH, PADDLE_HEIGHT))
-
-    # Check to see if the ball has collided with player1's paddle also make sure the ball is
-    # moving to the right since player2's paddle is on the right side of the board.
-    if pygame.Rect.colliderect(ball_rect, paddle1_rect) and velocity['x'] < 0:
-        # this checks to see if the players paddle has been hit on the right side.
-        # 10 is to give some leeway
-        if abs(ball_rect.left - paddle1_rect.right) < 10:
+    # This section of the code is checking if the ball collides
+    if x > player2[0] - PADDLE_WIDTH:
+        if y > player2[1] and y <= (player2[1] + PADDLE_HEIGHT):
             velocity['x'] = -velocity['x']
-            x += velocity['x']
+            x = x + velocity['x']
+            print(f'player 2 - ({x:.2f},{y:.2f})')
 
-        # this checks to see if the players paddle has been hit on the top of the paddle.
-        # We also need to make sure the ball is heading down toward the paddle
-        # 10 is to give some leeway
-        elif abs(ball_rect.bottom - paddle1_rect.top) < 10 and  velocity['y'] > 0:
-            y = change_y_velocity(velocity['y'])
+    if x <= player1[0] + PADDLE_WIDTH:
+        if y >= player1[1] and y <= (player1[1] + PADDLE_HEIGHT):
+            velocity['y'] = -velocity['y']
+            y = y + velocity['y']
+            print(f'player 1 - ({x:.2f},{y:.2f})')
 
-        # this checks to see if the players paddle has been hit on from the bottom of the paddle.
-        # We also need to make sure the ball is heading up toward the paddle
-        # 10 is to give some leeway
-        elif abs(ball_rect.top - paddle1_rect.bottom) < 10 and  velocity['y'] < 0:
-            y = change_y_velocity(velocity['y'])
-
-    # Check to see if the ball has collided with player2's paddle also make sure the ball is
-    # moving to the left since player1's paddle is on the left side of the board.
-    if pygame.Rect.colliderect(ball_rect, paddle2_rect) and velocity['x'] > 0:
-        # this checks to see if the players paddle has been hit on the left side.
-        # 10 is to give some leeway
-        if abs(ball_rect.right - paddle2_rect.left) < 10:
-            velocity['x'] = -velocity['x']
-            x += velocity['x']
-
-        # this checks to see if the players paddle has been hit on from the top of the paddle.
-        # We also need to make sure the ball is heading down toward the paddle
-        # 10 is to give some leeway
-        elif abs(ball_rect.bottom - paddle2_rect.top) < 10 and  velocity['y'] > 0:
-            y = change_y_velocity(velocity['y'])
-
-        # this checks to see if the players paddle has been hit on from the bottom of the paddle.
-        # We also need to make sure the ball is heading up toward the paddle
-        # 10 is to give some leeway
-        elif abs(ball_rect.top - paddle2_rect.bottom) < 10 and  velocity['y'] < 0:
-            y = change_y_velocity(velocity['y'])
-
-    # update the current ball coordinates
     ball[0] = x
     ball[1] = y
-
 
 
 def update_ball_position():

@@ -74,7 +74,7 @@ def init_positions():
     global player1, player2, ball
 
     # player1's paddle is on the left side of the board and centered vertically
-    player1 = [0, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
+    player1 = [30, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
 
     # player2's paddle is on the right side of the board brought in 50px so tha it is not off the
     # screen and centered vertically

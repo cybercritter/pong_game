@@ -1,16 +1,14 @@
-#!/usr/bin/python3
-
 """Weber State University - CS 1400 (Adamic): Programming I -- Midterm Project
+
 Python implementation of the classic game Pong.
 
-This is a template for the implementation of the game Pong. You should
-implement the game logic in this file.
+This implementation:
+@author: J. Adamic (template) and Michael Reid (function)
+@weber W#: 01251998
+@date: 3/2/2024
 """
-# pylint: disable=no-member
-# import math # You may want to use math functions in your implementation.
-# Remove if unused.
+# pylint: disable=no-member disable=invalid-sequence-index
 import sys
-
 import pygame
 
 # Global constants. You shouldn't need to change these.
@@ -27,123 +25,202 @@ USER2_DOWN = pygame.K_DOWN  # Down arrow key
 COLOR_WHITE = (255, 255, 255)
 COLOR_BLACK = (0, 0, 0)
 
+# pylint: disable=invalid-name
 # Define the game objects
-ball = {'x': (WINDOW_WIDTH/2) - (BALL_WIDTH/2),
-        'y': (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)}
-player1 = {'x': 10, 'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
-player2 = {'x': WINDOW_WIDTH - BALL_WIDTH - 10,
-           'y': (WINDOW_HEIGHT/2) - (PADDLE_HEIGHT/2)}
-
-PLAYER_SCORES = {"player1": 0, "player2": 0}
+ball = [0, 0]
+player1 = [0, 0]
+player2 = [0, 0]
 
 # pylint: disable=global-statement
 # Put any other global variables you may need here (optional).
-BOARD_CENTER = ((WINDOW_WIDTH/2) - (BALL_WIDTH/2),
-                (WINDOW_HEIGHT/2) - (BALL_WIDTH/2))
 
-BALL_VELOCITIES_X = [2, 3, 4]
-BALL_VELOCITIES_Y = [.7, .9, 1.2]
-BALL_VELOCITY_X = 3
-BALL_VELOCITY_Y = 1.9
-PADDLE_VELOCITY = 4
+# Flag to keep initialization state
+game_initialized = False
+PADDLE_VELOCITY = 5
+velocity = {'x': 2, 'y': 2}
+player_scores = {"player1": 0, "player2": 0}
+
 
 # Define any helper functions here (optional).
-
-
-# pylint: enable=invalid-name
-# Required Functions.
-
-def paddle_hit(x, y):
+def wall_hit():
     """
-    The paddle_hit function is used to check if the ball collides with
-    either paddle.
+    The wall_hit function checks to see if the ball has hit a wall.
+    If it has, then it returns True and adds one point to the appropriate player's score.
+    Otherwise, it returns False.
 
-    If it does, then the x velocity of the ball will be reversed
-    and returned.
-
-    :param x: Check if the ball collides with the paddle
-    :param y: Check if the ball is within the height of the paddle
-
-    :return: The x and y coordinates of the ball
+    :return: True if wall hit, False if not collision occurred
     """
-    global BALL_VELOCITY_X
-    # This section of the code is checking if the ball collides
-    if x > player2['x'] - PADDLE_WIDTH:
-        if y > player2['y'] and y <= (player2['y'] + PADDLE_HEIGHT):
-            BALL_VELOCITY_X = -BALL_VELOCITY_X
-            x = x + BALL_VELOCITY_X
-            print(f'player 2 - ({x:.2f},{y:.2f})')
+    x = int(ball[0])
+    wall_collision = False
 
-    if x <= player1['x'] + PADDLE_WIDTH:
-        if y >= player1['y'] and y <= (player1['y'] + PADDLE_HEIGHT):
-            BALL_VELOCITY_X = -BALL_VELOCITY_X
-            x = x + BALL_VELOCITY_X
-            print(f'player 1 - ({x:.2f},{y:.2f})')
-
-    return (x, y)
-
-
-def move_ball():
-    """
-    The move_ball function is responsible for moving the ball around
-    the screen.
-
-    It takes into account collisions with paddles and walls,
-    as well as scoring points.
-
-    :return: The ball coordinates
-    """
-    global BALL_VELOCITY_X, BALL_VELOCITY_Y
-
-    # Bouncing Algorithm when the Ball hit the edge of the canvas
-    x = ball['x'] + BALL_VELOCITY_X
-    y = ball['y'] + BALL_VELOCITY_Y
-    collision_wall = False
+    # add the this to make the conditional easier to read
+    right_wall_collision = WINDOW_WIDTH - (BALL_WIDTH / 2)
 
     if x < 0:
-        PLAYER_SCORES['player2'] += 1
-        BALL_VELOCITY_X = -BALL_VELOCITY_X
-        x = x + BALL_VELOCITY_X
-        collision_wall = True
+        wall_collision = True
+        player_scores['player2'] += 1
 
-    elif x > WINDOW_WIDTH - BALL_WIDTH / 2:
-        PLAYER_SCORES['player1'] += 1
-        BALL_VELOCITY_X = -BALL_VELOCITY_X
-        x = x + BALL_VELOCITY_X
-        collision_wall = True
+    elif x > right_wall_collision:
+        wall_collision = True
+        player_scores['player1'] += 1
 
+    return wall_collision
+
+
+def init_positions():
+    """
+    Initializes the default positions of the player paddles and ball.
+    """
+    global player1, player2, ball
+
+    # player1's paddle is on the left side of the board and centered vertically
+    player1 = [0, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
+
+    # player2's paddle is on the right side of the board brought in 50px so tha it is not off the
+    # screen and centered vertically
+    player2 = [WINDOW_WIDTH - 50, WINDOW_HEIGHT / 2 - PADDLE_HEIGHT / 2]
+
+    # center the ball in the middle of the board
+    ball = [(WINDOW_WIDTH/2) - (BALL_WIDTH/2), (WINDOW_HEIGHT/2) - (BALL_WIDTH/2)]
+
+
+def change_y_velocity(y):
+    """
+    The function changes the velocity of the ball by flipping the y velocity,
+    which reverses its direction.
+
+    It then adds this new velocity to the current position of the ball to get a new position.
+
+    :param y: current ball-y coordinate
+    :return: new ball-y position
+    """
+    velocity['y'] = -velocity['y']
+    y += velocity['y']
+    return y
+
+
+def paddle_hit():
+    """
+    The paddle_hit function is used to determine if the ball has collided with either paddle.
+    If it has, then the velocity of the ball will change in both x and y directions.
+
+    The function also checks for a collision on each side of the paddle,
+    so that when a player hits the top or bottom of their paddle,
+    they can still hit it back towards their opponent.
+
+    Lastly it updates the balls coordinates
+    """
+    # several variable created for both ease of use and to make the logic below more readable
+    x = ball[0]
+    y = ball[1]
+    paddle1_x = player1[0]
+    paddle1_y = player1[1]
+
+    paddle2_x = player2[0]
+    paddle2_y = player2[1]
+
+    # Create a few pygame rectangles. Using built in pygame function
+    # makes finding collisions easier.
+    ball_rect = pygame.Rect((x, y), (BALL_WIDTH, BALL_HEIGHT))
+    paddle1_rect = pygame.Rect((paddle1_x, paddle1_y), (BALL_WIDTH, PADDLE_HEIGHT))
+    paddle2_rect = pygame.Rect((paddle2_x, paddle2_y), (BALL_WIDTH, PADDLE_HEIGHT))
+
+    # Check to see if the ball has collided with player1's paddle also make sure the ball is
+    # moving to the right since player2's paddle is on the right side of the board.
+    if pygame.Rect.colliderect(ball_rect, paddle1_rect) and velocity['x'] < 0:
+        # this checks to see if the players paddle has been hit on the right side.
+        # 10 is to give some leeway
+        if abs(ball_rect.left - paddle1_rect.right) < 10:
+            velocity['x'] = -velocity['x']
+            x += velocity['x']
+
+        # this checks to see if the players paddle has been hit on the top of the paddle.
+        # We also need to make sure the ball is heading down toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.bottom - paddle1_rect.top) < 10 and  velocity['y'] > 0:
+            y = change_y_velocity(velocity['y'])
+
+        # this checks to see if the players paddle has been hit on from the bottom of the paddle.
+        # We also need to make sure the ball is heading up toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.top - paddle1_rect.bottom) < 10 and  velocity['y'] < 0:
+            y = change_y_velocity(velocity['y'])
+
+    # Check to see if the ball has collided with player2's paddle also make sure the ball is
+    # moving to the left since player1's paddle is on the left side of the board.
+    if pygame.Rect.colliderect(ball_rect, paddle2_rect) and velocity['x'] > 0:
+        # this checks to see if the players paddle has been hit on the left side.
+        # 10 is to give some leeway
+        if abs(ball_rect.right - paddle2_rect.left) < 10:
+            velocity['x'] = -velocity['x']
+            x += velocity['x']
+
+        # this checks to see if the players paddle has been hit on from the top of the paddle.
+        # We also need to make sure the ball is heading down toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.bottom - paddle2_rect.top) < 10 and  velocity['y'] > 0:
+            y = change_y_velocity(velocity['y'])
+
+        # this checks to see if the players paddle has been hit on from the bottom of the paddle.
+        # We also need to make sure the ball is heading up toward the paddle
+        # 10 is to give some leeway
+        elif abs(ball_rect.top - paddle2_rect.bottom) < 10 and  velocity['y'] < 0:
+            y = change_y_velocity(velocity['y'])
+
+    # update the current ball coordinates
+    ball[0] = x
+    ball[1] = y
+
+
+
+def update_ball_position():
+    # store values in more
+    """
+    The update_ball_position function updates the ball's position by adding the velocity to it.
+    If the ball hits a the top or bottom of the display, its y-velocity is reversed.
+    """
+
+    # get the x,y corrdinates for the ball. adding velocity at this point smooths out the movement
+    x = ball[0] + velocity['x']
+    y = ball[1] + velocity['y']
+
+    # if the y point with height of the ball hits the bottom of the display
+    # "bounce" it back into play
     if y + BALL_HEIGHT > WINDOW_HEIGHT:
         x -= 1
         y -= 1
-        BALL_VELOCITY_Y = -BALL_VELOCITY_Y
+        velocity['y'] = -velocity['y']
 
+    # if the y point with height of the ball hits the top of the display
+    # "bounce" it back into play
     elif y < 0:
         x += 1
         y += 1
-        BALL_VELOCITY_Y = -BALL_VELOCITY_Y
-
-    x, y = paddle_hit(x, y)
-
-    if collision_wall is True:
-        x, y = BOARD_CENTER
+        velocity['y'] = -velocity['y']
 
     # set the current ball coordinates
-    ball['x'] = x
-    ball['y'] = y
+    ball[0] = x
+    ball[1] = y
 
-
+# pylint: enable=invalid-name
+# Required Functions.
 def get_scores():
-    """Return the current scores of player1 and player2 as a tuple.
     """
-    return (PLAYER_SCORES['player1'], PLAYER_SCORES['player2'])
+    The get_scores function returns the scores of both players as a tuple.
+
+    The first element in the tuple is player 1's score, and the second element is player 2's score.
+
+    :return: A tuple of the scores for both players
+    """
+    return (player_scores['player1'], player_scores['player2'])
 
 
 def process_input():
-    """Process the user input to update the game objects and state.
-
-    If the user presses ESC, quit the game.
-    If the user presses W or S, update the player1 position.
-    If the user presses the UP or DOWN arrow keys, update the player2 position.
+    """
+    The process_input function is used to update the game objects and state.
+    - If the user presses ESC, quit the game.
+    - If the user presses W or S, update the player1 position.
+    - If the user presses the UP or DOWN arrow keys, update the player2 position.
     """
     # Check for user input to close the game window. DO NOT MODIFY THIS LOOP.
     for event in pygame.event.get():
@@ -157,40 +234,52 @@ def process_input():
     # Get a dictionary of all user inputs.
     user_inputs = pygame.key.get_pressed()
 
-    # Use the dictionary of user inputs, to update the player positions.
-    # UPDATE THE CODE BELOW TO MOVE THE PLAYERS BASED ON USER INPUTS.
-    # HERE IS AN EXAMPLE ON HOW TO ACCESS THE USER INPUTS.
-    if user_inputs[USER1_UP]:
-        if player1['y'] > 0:
-            player1['y'] -= PADDLE_VELOCITY
+    # send the paddle up but don't let it go off the screen
+    if user_inputs[USER1_UP] and player1[1] > 0:
+        player1[1] -= PADDLE_VELOCITY
 
-    if user_inputs[USER1_DOWN]:
-        if player1['y'] < WINDOW_HEIGHT - PADDLE_HEIGHT:
-            player1['y'] += PADDLE_VELOCITY
+    # send the paddle down but don't let it go off the screen
+    if user_inputs[USER1_DOWN] and player1[1] < WINDOW_HEIGHT - PADDLE_HEIGHT:
+        player1[1] += PADDLE_VELOCITY
 
-    if user_inputs[USER2_UP]:
-        if player2['y'] > 0:
-            player2['y'] -= PADDLE_VELOCITY
+    # send the paddle up but don't let it go off the screen
+    if user_inputs[USER2_UP] and player2[1] > 0:
+        player2[1] -= PADDLE_VELOCITY
+    # send the paddle down but don't let it go off the screen
 
-    if user_inputs[USER2_DOWN]:
-        if player2['y'] < WINDOW_HEIGHT - PADDLE_HEIGHT:
-            player2['y'] += PADDLE_VELOCITY
+    if user_inputs[USER2_DOWN] and player2[1] < WINDOW_HEIGHT - PADDLE_HEIGHT:
+        player2[1] += PADDLE_VELOCITY
 
 
 def update():
-    """Update the positions of the game objects for the next frame.
-
-    ! UPDATE THIS DOCSTRING BASED ON YOUR IMPLEMENTATION.
-
-    YOU SHOULD IMPLEMENT THE FOLLOWING FUNCTIONALITY:
-        - Update the ball position based on velocity/direction.
-        - Boundary Detection: Check if the ball passes the left or right wall.
-        - Ball Collisions: Check if the ball collides with the top/bottom walls
-            or the paddles. Update the ball position/velocity accordingly.
-        - Paddle Collisions: Check if the paddles collide with the top/bottom.
-            Stop the paddle movement if a collision is detected.
     """
-    move_ball()
+    The update function is responsible for updating the game state.
+
+    - It updates the ball and paddle positions
+    - It also checks if there are any collisions between paddles or walls.
+
+    """
+    global game_initialized
+
+    # if this is the start of the app. Initialize the ball and paddles to the start position
+    # and set the flag so the program doesn't run the init code again
+    if game_initialized is False:
+        init_positions()
+        game_initialized = True
+
+    # move the ball to the next pixel on the screen
+    update_ball_position()
+
+    # check to see if a wall is hit and adjust the score as needed
+    if wall_hit():
+        init_positions()
+
+    # check to see if a paddle has been hit and "bounce" it back into play if it has
+    paddle_hit()
+
+
+
+# ------------------------- !Do Not Modify Below Code-------------------------
 
 
 def render():
@@ -217,12 +306,9 @@ def render():
     if isinstance(player1, dict) and isinstance(player2, dict):
         _paddle1 = (player1['x'], player1['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
         _paddle2 = (player2['x'], player2['y'], PADDLE_WIDTH, PADDLE_HEIGHT)
-    # elif (isinstance(player1, (tuple, list)) and
-    #       isinstance(player2, (tuple, list))):
-    #     _paddle1 = (player1[0], player1[1], PADDLE_WIDTH,
-    #                 PADDLE_HEIGHT)  # type: ignore
-    #     _paddle2 = (player2[0], player2[1], PADDLE_WIDTH,
-    #                 PADDLE_HEIGHT)  # type: ignore
+    elif (isinstance(player1, (tuple, list)) and isinstance(player2, (tuple, list))):
+        _paddle1 = (player1[0], player1[1], PADDLE_WIDTH, PADDLE_HEIGHT)
+        _paddle2 = (player2[0], player2[1], PADDLE_WIDTH, PADDLE_HEIGHT)
     else:
         raise TypeError("player1 and player2 must be either both lists, "
                         "both tuples, or both dictionaries.")
